@@ -198,7 +198,7 @@ const AddFeedModal = (props)=>{
   };
 	useEffect( (props)=>{
 		if(props?.open){
-		handleOpen();	
+		handleOpen();
 		}
 	}  ,[]);
 	const handleChange = (e) =>{
@@ -206,6 +206,19 @@ const AddFeedModal = (props)=>{
 		if(e.target.id == 'rss'){setUrl(e.target.value)};
 		//console.log(e);
 	}
+	
+	const copyFromClipboard = ()=>{
+	
+		navigator.clipboard.readText()
+		.then(text => {
+		setUrl(text);		
+		})
+		.catch(err => {
+		console.error('Failed to read clipboard contents: ', err);
+		});
+	
+	}
+	
 	
   return (
     <div>
@@ -230,19 +243,22 @@ const AddFeedModal = (props)=>{
 			<TextField
           required
           id="title"
-          label="Required"
+          label="Name"
           defaultValue=""
+		  value={title}
 		  onChange={handleChange}
         />
 		<div style={{padding:"2px"}}></div>
 			<TextField
           required
           id="rss"
-          label="Required"
+          label="Link"
           defaultValue=""
 		  onChange={handleChange}
+		  value={url}
         />
 		<div style={{padding:"2px"}}></div>
+      <Button onClick={copyFromClipboard}>Paste from clipbaord</Button>			
       <Button onClick={handleAdd}>Add to feed</Button>			
           </Box>
         </Fade>
@@ -261,8 +277,10 @@ const ContentView = (props) => {
   useEffect(() => {
     ///fetch(url)
 	setContent({});
-	console.log(object["title"]);
-	const url = "https://api.rss2json.com/v1/api.json?rss_url=" + object["url"];
+	
+	console.log(tabs);
+
+	const url = "https://api.rss2json.com/v1/api.json?rss_url=" + object?.url;
     fetch(url).then((response) => {
         return response.json();
       })
@@ -293,8 +311,9 @@ const ContentView = (props) => {
 <Typography
             className={"MuiTypography--heading"}
             variant={"h6"}
-            gutterBottom
-          >
+			gutterBottom
+			
+>
 		Articles from the added feed.
           </Typography>
           <Typography
@@ -360,24 +379,32 @@ export default function ScrollableTabsButtonAuto() {
 }
 
   const updArray = (url) =>{ 
-  
-
-  const filteredItems = tabs.filter((iter)=>{return iter['url'] !==  url});
-  //console.log(filteredItems);  
-  setTabs(filteredItems);
-  
+	const filteredItems = tabs.filter((iter)=>{return iter['url'] !==  url});
+	setTabs(filteredItems);
+	console.log(filteredItems);
   };
   useEffect(()=>{
 	//console.log('tabs updated!');  
 	//console.log(tabs);
+	if(JSON.parse(localStorage.getItem("object")) !== undefined && localStorage.getItem("object") !== null) 
+		{
+			setTabs(JSON.parse(localStorage.getItem("object")));
+		}
+  } ,[]);
+  
+  useEffect(()=>{
+	//console.log('tabs updated!');  
+	//console.log(tabs);
+  	localStorage.setItem("object",JSON.stringify(tabs));
   } ,[tabs]);
   
+
   const handleModalOpen = () =>{
 	setOpenModal(true);
   }
   return (
     <div className={classes.root}>
-      <AppBar position="static" color="default">
+      <AppBar position="static" color="default" style={{position: "sticky", top:"0"}}>
 	  <Tabs
           value={value}
           onChange={handleChange}
@@ -446,3 +473,7 @@ tabs?.length < 1 ?
 }
 //when the feed doesnt contain any articles, how to ?
 //http://feeds.washingtonpost.com/rss/rss_plum-line?itid=lk_inline_manual_12
+
+//https://www.thestar.com.my/rss/News/Regional
+//https://www.thestar.com.my/rss/News/Environment
+//https://www.thestar.com.my/rss
