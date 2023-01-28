@@ -89,8 +89,7 @@ const img =
 const img2 = "cool.png";
 
 function TabPanel(props, classes) {
-  const { children, value, index, ...other } = props;
-
+  const { children,tabName, value, index, ...other } = props;
   return (
     <div
       role="tabpanel"
@@ -123,7 +122,13 @@ function a11yProps(index) {
 }
 
 const CardView = (props) => {
-  const { object ,classes} = props;  
+  const { object ,classes,saveForLater,isFav} = props;
+  const saveForLaterTabHandler = (object) =>{
+	  //save this link and its parent tab name as well. 
+	  //object?.link
+	  saveForLater(object);
+  }
+  
   const openUrl = () =>{	
 	if(object?.link !== undefined)
 	{
@@ -141,7 +146,6 @@ const CardView = (props) => {
 	}
 	
   };
-  
   
   return (
     <div>
@@ -167,6 +171,7 @@ const CardView = (props) => {
 			onClick={openUrl}>
             Learn More
           </Button>
+		<Button disabled={isFav} size="small" color="primary"  onClick={()=>saveForLaterTabHandler(object)}>Save</Button>
         </CardActions>
 		
       </Card>
@@ -189,8 +194,9 @@ const AddFeedModal = (props)=>{
   const handleClose = () => setOpen(false);
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
+  const [doneFetching,setDoneFetching] = React.useState(false);
   const handleAdd = () =>{ 
-	console.log(title,url);
+	//console.log(title,url);
 	
 	addToFeed(title,url);
 	
@@ -206,12 +212,15 @@ const AddFeedModal = (props)=>{
 		if(e.target.id == 'rss'){setUrl(e.target.value)};
 		//console.log(e);
 	}
-	
+	const getRSSDesc = (data) => {
+		setDoneFetching(true);
+	}
 	const copyFromClipboard = ()=>{
 	
 		navigator.clipboard.readText()
 		.then(text => {
-		setUrl(text);		
+		setUrl(text);
+		//fetchData(text,getRSSDesc);
 		})
 		.catch(err => {
 		console.error('Failed to read clipboard contents: ', err);
@@ -267,28 +276,32 @@ const AddFeedModal = (props)=>{
   );
 }
 
+const fetchData = (url,handler) => {
+    if(url === undefined){return {}}
+	fetch(url).then((response) => {
+        return response.json();
+      })
+      .then((data) => {
+        handler(data);
+      });
+}
 
 const ContentView = (props) => {
-  const { object ,classes, tabs, updArray} = props;
+  const { object ,classes, tabs, updArray, addToFavs} = props;
   const [content, setContent] = useState({});
   const [loading,setLoading] = useState(true);
 
-  //  console.log(object["url"]);
   useEffect(() => {
-    ///fetch(url)
 	setContent({});
-	
-	console.log(tabs);
-
-	const url = "https://api.rss2json.com/v1/api.json?rss_url=" + object?.url;
-    fetch(url).then((response) => {
+	const url = "https://api.rss2json.com/v1/api.json?rss_url=" + object?.url; fetchData(url,setContent);
+    /*
+	fetch(url).then((response) => {
         return response.json();
       })
       .then((data) => {
         setContent(data);
-        //console.log(data);
       });
-    /*
+    
      */
   }, [props]);
 
@@ -302,8 +315,12 @@ const ContentView = (props) => {
   
   const removeFeed = () =>{
 	updArray(object["url"]);
-
   };
+  
+  const saveForLater = (object) =>{
+//	console.log(object?.title,url);
+	addToFavs(object);
+  }
   return (
     <div>
 
@@ -312,7 +329,6 @@ const ContentView = (props) => {
             className={"MuiTypography--heading"}
             variant={"h6"}
 			gutterBottom
-			
 >
 		Articles from the added feed.
           </Typography>
@@ -342,13 +358,73 @@ const ContentView = (props) => {
 	}
 
 	 { 
-		content?.items?.map( (obj)=>{return <CardView classes={classes} object = {obj}/>}  )
+		content?.items?.map( (obj)=>{return <CardView classes={classes} object = {obj} saveForLater={saveForLater}/>}  )
 	 }
 
-
+	
     </div>
   );
 };
+
+
+const FavouriteView = (props) => {
+  const { classes,favsList } = props;
+  const [content, setContent] = React.useState([]);
+  const [loading,setLoading] = React.useState(true);
+
+  useEffect(() => {
+    ///fetch(url)
+	console.log("favsList",favsList);
+	
+	if(favsList?.length == 0)
+	{
+		
+		if(JSON.parse(localStorage.getItem("favs")) !== undefined && localStorage.getItem("favs") !== null) 
+		{
+			setContent(JSON.parse(localStorage.getItem("favs")));
+		}
+		
+		
+	}
+	else{
+			setContent(favsList);
+	}
+}, [props]);
+  
+  
+  useEffect(()=>{
+  	localStorage.setItem("favs",JSON.stringify(favsList));
+  } ,[content]);
+  
+  
+  
+  return (
+    <div>
+
+	<Paper elevation={3}>
+
+          <Typography
+            className={"MuiTypography--subheading"}
+            variant={"caption"}
+          >
+
+          </Typography>
+
+
+	 
+     </Paper>
+	
+	
+	 { 
+		content?.map( (obj)=>{return <CardView classes={classes} object = {obj} isFav={true} saveForLater={()=>{}}/>}  )
+	 }
+
+	
+    </div>
+  );
+};
+
+
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -374,14 +450,22 @@ export default function ScrollableTabsButtonAuto() {
       url:"https://feeds.washingtonpost.com/rss/business/technology?itid=lk_inline_manual_36"
     }
   ]);
+  const [favsList,setFavsList] = useState([]);
+  const addToFavs = (object) =>{
+	
+	favsList === {} ? 
+	setFavsList([object]):
+	setFavsList( favsList => [...favsList,object] );
+		}
+
   const addToFeed = (title,url) =>{
 	setTabs(tabs => [...tabs, {title:title,url:url}]);
 }
 
-  const updArray = (url) =>{ 
+  const updArray = (url) =>{
 	const filteredItems = tabs.filter((iter)=>{return iter['url'] !==  url});
 	setTabs(filteredItems);
-	console.log(filteredItems);
+
   };
   useEffect(()=>{
 	//console.log('tabs updated!');  
@@ -390,6 +474,13 @@ export default function ScrollableTabsButtonAuto() {
 		{
 			setTabs(JSON.parse(localStorage.getItem("object")));
 		}
+		
+	if(JSON.parse(localStorage.getItem("favs")) !== undefined && localStorage.getItem("favs") !== null) 
+		{
+			JSON.parse(localStorage.getItem("favs")).map( (obj)=>{addToFavs(obj)}  );
+		}
+		
+		
   } ,[]);
   
   useEffect(()=>{
@@ -419,18 +510,31 @@ export default function ScrollableTabsButtonAuto() {
             return <Tab label={obj["title"]} {...a11yProps(ind)} />;
           })
 		} : ""
-		  
+		{<Tab label={"favs"} {...a11yProps(1)} />}
         </Tabs>
       </AppBar>
-
 
       <TabPanel value={value} index={value}>
 {
 tabs?.length > 0 ?
  
- <ContentView classes={classes} object={tabs[value]} tabs = {tabs} updArray = {updArray} />
+ <ContentView 
+ classes={classes} 
+ object={tabs[value]} 
+ addToFavs = {addToFavs} 
+ tabs = {tabs} 
+ updArray = {updArray} 
+ />
 : ""
 }
+
+{
+tabs[value] === undefined ? <FavouriteView
+classes={classes} favsList = {favsList} />  :  "" 
+}
+
+
+
 
 {
 
