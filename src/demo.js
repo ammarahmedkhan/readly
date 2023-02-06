@@ -128,6 +128,7 @@ const CardView = (props) => {
 	  //object?.link
 	  saveForLater(object);
   }
+ 
   
   const openUrl = () =>{	
 	if(object?.link !== undefined)
@@ -171,8 +172,9 @@ const CardView = (props) => {
 			onClick={openUrl}>
             Learn More
           </Button>
-		<Button disabled={isFav} size="small" color="primary"  onClick={()=>saveForLaterTabHandler(object)}>Save</Button>
-        </CardActions>
+		{!isFav && <Button size="small" color="primary"  onClick={()=>saveForLaterTabHandler(object)}>Save</Button>}
+		{isFav && <AddNotesModal object={object}/>}
+		</CardActions>
 		
       </Card>
   <Divider light />
@@ -187,6 +189,80 @@ const CardView = (props) => {
   );
 };
 
+const AddNotesModal = (props)=>{
+  const {object} = props;
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [note, setNote] = useState("");
+  const [doneFetching,setDoneFetching] = React.useState(false);
+  
+  const matchURL =(iterObj)=>{
+	return iterObj["link"]==object["link"];
+	}
+  const handleAdd = () =>{
+	let matchedObjectIndex = fetchFromLocalStorage("favs").findIndex(matchURL);
+	updateLocalStorage("favs",matchedObjectIndex,"note",note);
+	handleClose();
+  };
+	useEffect( (props)=>{
+		setNote(object?.note);
+		if(props?.open){
+		handleOpen();
+		}
+	}  ,[]);
+	const handleChange = (e) =>{
+		if(e.target.id == 'notes'){setNote(e.target.value)};
+	}
+	
+	
+  return (
+    <div>
+      <Button onClick={handleOpen}>Add Notes</Button>
+      <Modal
+        aria-labelledby="transition-modal-title"
+        aria-describedby="transition-modal-description"
+        open={open}
+        onClose={handleClose}
+        closeAfterTransition
+        BackdropComponent={Backdrop}
+        BackdropProps={{
+          timeout: 500,
+        }}
+      >
+        <Fade in={open}>
+          <Box sx={modalStyle}>
+            <Typography id="transition-modal-title" variant="h6" component="h2">
+              Add a Note
+            </Typography>
+
+		<div style={{padding:"2px"}}></div>
+		<TextField
+		  multiline
+          rows={4}
+          id="notes"
+          label="Notes"
+          defaultValue=""
+		  onChange={handleChange}
+		  value={note}
+        />
+		<div style={{padding:"2px"}}></div>
+      <Button onClick={handleAdd}>Add Note</Button>			
+          </Box>
+        </Fade>
+      </Modal>	
+    </div>
+  );
+}
+
+const updateLocalStorage = (object,index,attr,value) => {
+	let updatedLocalStorage = fetchFromLocalStorage("favs");
+	updatedLocalStorage[index][attr]=value;
+	localStorage.setItem("favs",JSON.stringify(updatedLocalStorage));
+}
+
 const AddFeedModal = (props)=>{
   const {addToFeed} = props;
   const [open, setOpen] = React.useState(false);
@@ -196,8 +272,6 @@ const AddFeedModal = (props)=>{
   const [url, setUrl] = useState("");
   const [doneFetching,setDoneFetching] = React.useState(false);
   const handleAdd = () =>{ 
-	//console.log(title,url);
-	
 	addToFeed(title,url);
 	
 	handleClose();
@@ -286,6 +360,19 @@ const fetchData = (url,handler) => {
       });
 }
 
+const fetchFromLocalStorage = (storageObjName) =>{
+	let fetchedResult = [];
+	try{
+		 fetchedResult = (localStorage.getItem(storageObjName) !== undefined && localStorage.getItem(storageObjName) !== null ? 
+		JSON.parse(localStorage.getItem(storageObjName)) : [] );
+	}
+	catch(e)
+	{
+		
+	}
+	return fetchedResult;
+}
+
 const ContentView = (props) => {
   const { object ,classes, tabs, updArray, addToFavs} = props;
   const [content, setContent] = useState({});
@@ -318,7 +405,6 @@ const ContentView = (props) => {
   };
   
   const saveForLater = (object) =>{
-//	console.log(object?.title,url);
 	addToFavs(object);
   }
   return (
@@ -374,17 +460,19 @@ const FavouriteView = (props) => {
 
   useEffect(() => {
     ///fetch(url)
-	console.log("favsList",favsList);
-	
 	if(favsList?.length == 0)
 	{
-		
-		if(JSON.parse(localStorage.getItem("favs")) !== undefined && localStorage.getItem("favs") !== null) 
+		setContent(fetchFromLocalStorage("favs"));
+/* 		try{
+
+		if(JSON.parse(localStorage.getItem("favs")) !== undefined && localStorage.getItem("favs") !== null ) 
 		{
 			setContent(JSON.parse(localStorage.getItem("favs")));
 		}
-		
-		
+		}
+		catch(e){
+			
+		} */
 	}
 	else{
 			setContent(favsList);
@@ -450,6 +538,7 @@ export default function ScrollableTabsButtonAuto() {
       url:"https://feeds.washingtonpost.com/rss/business/technology?itid=lk_inline_manual_36"
     }
   ]);
+  
   const [favsList,setFavsList] = useState([]);
   const addToFavs = (object) =>{
 	
@@ -462,24 +551,37 @@ export default function ScrollableTabsButtonAuto() {
 	setTabs(tabs => [...tabs, {title:title,url:url}]);
 }
 
+useEffect(()=>{
+  	localStorage.setItem("object",JSON.stringify(tabs));
+  } ,[tabs]);
+  
+
+
   const updArray = (url) =>{
 	const filteredItems = tabs.filter((iter)=>{return iter['url'] !==  url});
 	setTabs(filteredItems);
 
   };
   useEffect(()=>{
-	//console.log('tabs updated!');  
-	//console.log(tabs);
+	
+	setTabs(fetchFromLocalStorage("object"));
+/* 	try{
 	if(JSON.parse(localStorage.getItem("object")) !== undefined && localStorage.getItem("object") !== null) 
 		{
 			setTabs(JSON.parse(localStorage.getItem("object")));
 		}
+	}catch(e){
 		
+	} */
+	fetchFromLocalStorage("favs")?.map( (obj)=>{addToFavs(obj)}  );
+/* 	try{
 	if(JSON.parse(localStorage.getItem("favs")) !== undefined && localStorage.getItem("favs") !== null) 
 		{
 			JSON.parse(localStorage.getItem("favs")).map( (obj)=>{addToFavs(obj)}  );
 		}
+	}catch(e){
 		
+	}	 */
 		
   } ,[]);
   
@@ -530,7 +632,7 @@ tabs?.length > 0 ?
 
 {
 tabs[value] === undefined ? <FavouriteView
-classes={classes} favsList = {favsList} />  :  "" 
+classes={classes} favsList = {favsList} />  :  ""
 }
 
 
