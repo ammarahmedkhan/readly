@@ -6,7 +6,7 @@ import {fetchFromLocalStorage,saveToLocalStorage} from "./utilFunctions.js"
 
 
 const FavouriteView = (props) => {
-  const { classes,favsList } = props;
+  const { classes,favsList , deleteFav, addNoteToStorage} = props;
   const [content, setContent] = React.useState([]);
   const [loading,setLoading] = React.useState(true);
 
@@ -20,14 +20,22 @@ const FavouriteView = (props) => {
 			setContent(favsList);
 	}
 }, [props]);
+//https://stackoverflow.com/questions/57788721/react-hook-delayed-useeffect-firing
+ useEffect(() => {
+      setTimeout(()=>{
+		setContent(favsList);
+      }, 50)
+ 
+    }, [favsList])
   
   
   useEffect(()=>{
-  	//localStorage.setItem("favs",JSON.stringify(favsList));
 	saveToLocalStorage("favs",favsList);
   } ,[content]);
   
-  
+  const deleteFavourite = (object) => {
+	 deleteFav(object);
+  }
   
   return (
     <div>
@@ -47,7 +55,7 @@ const FavouriteView = (props) => {
 	
 	
 	 { 
-		content?.map( (obj)=>{return <CardView classes={classes} object = {obj} isFav={true} saveForLater={()=>{}}/>}  )
+		content?.map( (obj)=>{return <CardView classes={classes} object = {obj} isFav={true} saveForLater={()=>{}} deleteFavourite = {deleteFavourite} addNote = {addNoteToStorage}  />}  )
 	 }
 
 	

@@ -14,7 +14,7 @@ import CardView from "./CardView.js";
 import ContentView from "./ContentView.js";
 import FavouriteView from "./FavouriteView.js";
 import TabPanel from "./TabPanel.js";
-import {updateLocalStorage,fetchData, fetchFromLocalStorage,a11yProps,saveToLocalStorage} from "./utilFunctions.js"
+import {updateLocalStorage,fetchData, fetchFromLocalStorage,a11yProps,saveToLocalStorage,getObjByURL} from "./utilFunctions.js"
 
 import "./styles.css";
 
@@ -38,7 +38,37 @@ export default function ScrollableTabsButtonAuto() {
 	setFavsList([object]):
 	setFavsList( favsList => [...favsList,object] );
 		}
+  const deleteFav = (object) =>{
+		if(favsList.length === 1){setFavsList([]);return; }
+		const matchedIndex = favsList.findIndex((iter)=>{return iter['link'] ===  object['link']});
+		const tempFavCopy = [...favsList];
+		tempFavCopy.splice(matchedIndex,1);
+		setFavsList(tempFavCopy);
+		//console.log("demo",tempFavCopy);
+  }
+  const addNoteToStorage = (url,note) =>{
+	//fetch from local storage first
+	let notes = fetchFromLocalStorage("notes");
+	//check if the notes are already created.
+	const existingNoteObject = getObjByURL(url,"notes");
+	if(!Array.isArray(notes)){
+		//if not, create for the first time.
+		saveToLocalStorage("notes",[{"url":url,"note":note}]);
+	}
+	else{//if yes, save to existing ones.
+		//check if the note for this url already exists -  if yes, update, if not, save it.
 
+		if(existingNoteObject === undefined )
+		{
+			notes.push({"url":url,"note":note});
+			saveToLocalStorage("notes",notes);
+		}
+		else{
+			updateLocalStorage("notes",existingNoteObject["index"],"note",note)
+		}
+	}
+  }
+  
   const addToFeed = (title,url) =>{
 	setTabs(tabs => [...tabs, {title:title,url:url}]);
 }
@@ -50,7 +80,6 @@ export default function ScrollableTabsButtonAuto() {
 	const updArray = (url) =>{
 	const filteredItems = tabs.filter((iter)=>{return iter['url'] !==  url});
 	setTabs(filteredItems);
-
   };
   useEffect(()=>{
 	setTabs(fetchFromLocalStorage("object"));
@@ -102,12 +131,8 @@ tabs?.length > 0 ?
 
 {
 tabs[value] === undefined ? <FavouriteView
-classes={classes} favsList = {favsList} />  :  ""
+classes={classes} favsList = {favsList} deleteFav = {deleteFav} addNoteToStorage = {addNoteToStorage}/>  :  ""
 }
-
-
-
-
 {
 
 tabs?.length < 1 ?

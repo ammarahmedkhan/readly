@@ -7,15 +7,17 @@ import CardActions from "@material-ui/core/CardActions";
 import Button from "@material-ui/core/Button";
 import Divider from "@material-ui/core/Divider";
 import AddNotesModal from "./AddNotesModal.js";
+import {fetchFromLocalStorage} from "./utilFunctions.js"
 
 const CardView = (props) => {
-  const { object ,classes,saveForLater,isFav} = props;
+  const { object ,classes,saveForLater,isFav,deleteFavourite,addNote} = props;
+  const [noteText,setNoteText] = useState("");
   const saveForLaterTabHandler = (object) =>{
-	  //save this link and its parent tab name as well. 
-	  //object?.link
 	  saveForLater(object);
   }
-  
+	
+ useEffect(() => {
+  }, [props]);	
   const openUrl = () =>{	
 	if(object?.link !== undefined)
 	{
@@ -27,9 +29,6 @@ const CardView = (props) => {
       .catch(() => {
         alert("something went wrong");
       });
-	
-	
-		//window.open(object?.link);
 	}
 	
   };
@@ -58,11 +57,14 @@ const CardView = (props) => {
 			onClick={openUrl}>
             Learn More
           </Button>
+		  
+
+		  
 		{!isFav && <Button size="small" color="primary"  onClick={()=>saveForLaterTabHandler(object)}>Save</Button>}
-		{isFav && <AddNotesModal object={object}/>}
+		{isFav && <Button size="small" color="primary"   onClick={()=>{deleteFavourite(object)}}>Delete</Button>}
+		{isFav && <AddNotesModal object={object} addNote = {addNote}/>}
 		</CardActions>
-		
-      </Card>
+		      </Card>
   <Divider light />
           <Typography
             className={"MuiTypography--subheading"}

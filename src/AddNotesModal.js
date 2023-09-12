@@ -7,11 +7,11 @@ import Typography from "@material-ui/core/Typography";
 import TextField from "@material-ui/core/TextField";
 import Backdrop from "@material-ui/core/Backdrop";
 import {styles,modalStyle} from "./customStyles.js";
-import {updateLocalStorage,fetchFromLocalStorage} from "./utilFunctions.js"
+import {updateLocalStorage,fetchFromLocalStorage,saveToLocalStorage,getObjByURL} from "./utilFunctions.js"
 
 
 const AddNotesModal = (props)=>{
-  const {object} = props;
+  const {object,addNote} = props;
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
@@ -24,12 +24,12 @@ const AddNotesModal = (props)=>{
 	return iterObj["link"]==object["link"];
 	}
   const handleAdd = () =>{
-	let matchedObjectIndex = fetchFromLocalStorage("favs").findIndex(matchURL);
-	updateLocalStorage("favs",matchedObjectIndex,"note",note);
+	addNote(object["link"],note);
 	handleClose();
   };
 	useEffect( (props)=>{
-		setNote(object?.note);
+		const temp = getObjByURL(object["link"],"notes");
+		temp === undefined ? temp : setNote(temp.object.note);
 		if(props?.open){
 		handleOpen();
 		}
@@ -41,7 +41,7 @@ const AddNotesModal = (props)=>{
 	
   return (
     <div>
-      <Button onClick={handleOpen}>Add Notes</Button>
+      <Button onClick={handleOpen}>Add/View Notes</Button>
       <Modal
         aria-labelledby="transition-modal-title"
         aria-describedby="transition-modal-description"

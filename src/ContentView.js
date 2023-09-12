@@ -11,7 +11,6 @@ const ContentView = (props) => {
   const { object ,classes, tabs, updArray, addToFavs} = props;
   const [content, setContent] = useState({});
   const [loading,setLoading] = useState(true);
-
   useEffect(() => {
 	setContent({});
 	const url = "https://api.rss2json.com/v1/api.json?rss_url=" + object?.url; fetchData(url,setContent);
@@ -26,7 +25,11 @@ const ContentView = (props) => {
   },[]);
   
   const removeFeed = () =>{
-	updArray(object["url"]);
+	try
+	{updArray(object["url"]);}
+	catch(e)
+	{}
+
   };
   
   const saveForLater = (object) =>{
@@ -53,8 +56,9 @@ const ContentView = (props) => {
 
 	 
      </Paper>
-		<Button size="small" color="primary"
-		onClick={removeFeed}>
+	
+		{  <Button size="small" color="primary" onClick={removeFeed}> 
+
 			 	 <img src="https://cdn-icons-png.flaticon.com/512/166/166475.png"
 	 width = "30" height = "30" className={classes.content}
 	 tooltip="remove feed"
@@ -62,6 +66,7 @@ const ContentView = (props) => {
 	 </img>
 
           </Button>
+		  }
 	{
 	
 	( content?.items?.length < 0 && content?.items !== undefined )   ? <CircularProgress/>   : ""
